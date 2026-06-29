@@ -37,7 +37,7 @@ public class BluetoothStateReceiver extends BroadcastReceiver {
         Log.d("BatteryHelper", "收到广播：" + action);
 
         if (WidgetRefreshScheduler.ACTION_POLL_WIDGETS.equals(action)) {
-            updateWidgets(appContext, false);
+            updateWidgets(appContext);
             WidgetRefreshScheduler.scheduleIfNeeded(appContext);
             return;
         }
@@ -58,22 +58,13 @@ public class BluetoothStateReceiver extends BroadcastReceiver {
     }
 
     private static void updateWidgets(Context appContext) {
-        updateWidgets(appContext, true);
-    }
-
-    private static void updateWidgets(Context appContext, boolean requestStepUpdate) {
         AppWidgetManager manager = AppWidgetManager.getInstance(appContext);
 
         ComponentName widget2x1 = new ComponentName(appContext, MyWidgetProvider.class);
         MyWidgetProvider.updateAllWidgets(appContext, manager, manager.getAppWidgetIds(widget2x1));
 
         ComponentName widget2x2 = new ComponentName(appContext, MyWidgetProvider2x2.class);
-        MyWidgetProvider2x2.updateAllWidgets(
-                appContext,
-                manager,
-                manager.getAppWidgetIds(widget2x2),
-                requestStepUpdate
-        );
+        MyWidgetProvider2x2.updateAllWidgets(appContext, manager, manager.getAppWidgetIds(widget2x2));
     }
 
     private static boolean shouldRefreshWidget(String action) {

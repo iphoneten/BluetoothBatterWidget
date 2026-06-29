@@ -29,7 +29,7 @@ public class MyWidgetProvider2x2 extends AppWidgetProvider {
         if (SystemBatteryHelper.isPowerAction(action)) {
             AppWidgetManager manager = AppWidgetManager.getInstance(context);
             ComponentName thisWidget = new ComponentName(context, MyWidgetProvider2x2.class);
-            updateAllWidgets(context, manager, manager.getAppWidgetIds(thisWidget), false);
+            updateAllWidgets(context, manager, manager.getAppWidgetIds(thisWidget));
             WidgetRefreshScheduler.scheduleIfNeeded(context);
         }
     }
@@ -60,28 +60,12 @@ public class MyWidgetProvider2x2 extends AppWidgetProvider {
     }
 
     public static void updateAllWidgets(Context context, AppWidgetManager manager, int[] appWidgetIds) {
-        updateAllWidgets(context, manager, appWidgetIds, true);
-    }
-
-    static void updateAllWidgets(
-            Context context,
-            AppWidgetManager manager,
-            int[] appWidgetIds,
-            boolean requestStepUpdate
-    ) {
         if (appWidgetIds == null || appWidgetIds.length == 0) {
             return;
         }
 
         for (int appWidgetId : appWidgetIds) {
             manager.updateAppWidget(appWidgetId, createRemoteViews(context));
-        }
-
-        if (requestStepUpdate) {
-            Context appContext = context.getApplicationContext();
-            StepCounterHelper.requestStepUpdate(appContext, () ->
-                    updateAllWidgets(appContext, manager, appWidgetIds, false)
-            );
         }
     }
 
@@ -113,13 +97,11 @@ public class MyWidgetProvider2x2 extends AppWidgetProvider {
         views.setTextViewText(R.id.phone_battery_percent, systemBattery.percentText);
         views.setTextViewText(R.id.phone_charge_status, systemBattery.chargeText);
 
-        StepCounterHelper.StepStatus stepStatus = StepCounterHelper.getStepStatus(context);
-        views.setTextViewText(R.id.steps_count, stepStatus.stepsText);
-        views.setImageViewBitmap(
-                R.id.steps_progress,
-                WidgetIconRenderer.createStepProgressBar(context, stepStatus.steps, stepStatus.goal)
-        );
-        views.setTextViewText(R.id.steps_goal, stepStatus.goalText);
+        DateTimeHelper.DateTimeStatus dateTime = DateTimeHelper.getCurrent();
+        views.setTextViewText(R.id.time_text, dateTime.timeText);
+        views.setTextViewText(R.id.week_text, dateTime.weekText);
+        views.setTextViewText(R.id.date_text, dateTime.dateText);
+        views.setTextViewText(R.id.lunar_text, dateTime.lunarText);
         return views;
     }
 }

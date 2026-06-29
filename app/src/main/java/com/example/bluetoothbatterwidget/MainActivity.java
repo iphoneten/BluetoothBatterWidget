@@ -9,13 +9,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.text.InputType;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -41,10 +38,10 @@ public class MainActivity extends Activity {
     private ImageView previewPhoneBatteryImageView;
     private TextView previewPhoneBatteryPercentView;
     private TextView previewPhoneChargeStatusView;
-    private TextView previewStepsCountView;
-    private ImageView previewStepsProgressView;
-    private TextView previewStepsGoalView;
-    private EditText stepGoalInputView;
+    private TextView previewTimeView;
+    private TextView previewWeekView;
+    private TextView previewDateView;
+    private TextView previewLunarView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,8 +113,6 @@ public class MainActivity extends Activity {
         refreshButtonParams.topMargin = dp(12);
         root.addView(refreshButton, refreshButtonParams);
 
-        root.addView(createStepGoalRow(), stepGoalLayoutParams());
-
         setContentView(scrollView);
     }
 
@@ -136,59 +131,6 @@ public class MainActivity extends Activity {
         }
 
         refreshWidgetAndStatus();
-    }
-
-    private LinearLayout createStepGoalRow() {
-        LinearLayout row = new LinearLayout(this);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-
-        stepGoalInputView = new EditText(this);
-        stepGoalInputView.setSingleLine(true);
-        stepGoalInputView.setTextSize(16);
-        stepGoalInputView.setInputType(InputType.TYPE_CLASS_NUMBER);
-        stepGoalInputView.setText(String.valueOf(StepGoalHelper.getGoal(this)));
-        stepGoalInputView.setHint("目标步数");
-        row.addView(stepGoalInputView, new LinearLayout.LayoutParams(
-                0,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                1
-        ));
-
-        Button saveButton = new Button(this);
-        saveButton.setText("保存");
-        saveButton.setAllCaps(false);
-        saveButton.setOnClickListener(view -> saveStepGoal());
-        LinearLayout.LayoutParams saveParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        saveParams.leftMargin = dp(8);
-        row.addView(saveButton, saveParams);
-
-        return row;
-    }
-
-    private void saveStepGoal() {
-        String input = stepGoalInputView.getText().toString().trim();
-        if (input.isEmpty()) {
-            Toast.makeText(this, "请输入目标步数", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        int goal;
-        try {
-            goal = Integer.parseInt(input);
-        } catch (NumberFormatException e) {
-            Toast.makeText(this, "目标步数格式不正确", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        StepGoalHelper.saveGoal(this, goal);
-        stepGoalInputView.setText(String.valueOf(StepGoalHelper.getGoal(this)));
-        updateWidgetMetricsPreview();
-        MyWidgetProvider2x2.updateAllWidgets(this);
-        Toast.makeText(this, "已保存目标步数", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -242,31 +184,19 @@ public class MainActivity extends Activity {
                 != PackageManager.PERMISSION_GRANTED;
     }
 
-    private boolean needsActivityRecognitionPermission() {
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-                && checkSelfPermission(Manifest.permission.ACTIVITY_RECOGNITION)
-                != PackageManager.PERMISSION_GRANTED;
-    }
-
     private String[] getMissingPermissions() {
         List<String> permissions = new ArrayList<>();
         if (needsBluetoothPermission()) {
             permissions.add(Manifest.permission.BLUETOOTH_CONNECT);
         }
-        if (needsActivityRecognitionPermission()) {
-            permissions.add(Manifest.permission.ACTIVITY_RECOGNITION);
-        }
         return permissions.toArray(new String[0]);
     }
 
     private String getPermissionStatusText() {
-        if (needsBluetoothPermission() && needsActivityRecognitionPermission()) {
-            return "需要蓝牙和运动权限";
-        }
         if (needsBluetoothPermission()) {
             return "需要蓝牙权限才能读取耳机电量";
         }
-        return "需要运动权限才能读取步数";
+        return "";
     }
 
     private void refreshWidgetAndStatus() {
@@ -274,7 +204,6 @@ public class MainActivity extends Activity {
         statusView.setText(status.statusText);
         updatePreview(status);
         updateWidgetMetricsPreview();
-        StepCounterHelper.requestStepUpdate(this, this::updateWidgetMetricsPreview);
         MyWidgetProvider.updateAllWidgets(this);
         MyWidgetProvider2x2.updateAllWidgets(this);
         WidgetRefreshScheduler.scheduleIfNeeded(this);
@@ -454,13 +383,13 @@ public class MainActivity extends Activity {
                 1
         ));
 
-        LinearLayout.LayoutParams stepsPanelParams = new LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams dateTimePanelParams = new LinearLayout.LayoutParams(
                 0,
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 1
         );
-        stepsPanelParams.leftMargin = dp(8);
-        panelsRow.addView(createStepsPreviewPanel(), stepsPanelParams);
+        dateTimePanelParams.leftMargin = dp(8);
+        panelsRow.addView(createDateTimePreviewPanel(), dateTimePanelParams);
 
         return root;
     }
@@ -485,37 +414,36 @@ public class MainActivity extends Activity {
         return panel;
     }
 
-    private LinearLayout createStepsPreviewPanel() {
+    private LinearLayout createDateTimePreviewPanel() {
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setGravity(Gravity.CENTER);
         panel.setPadding(dp(8), dp(8), dp(8), dp(8));
         panel.setBackgroundResource(R.drawable.widget_panel_green);
 
-        previewStepsCountView = createCenteredPreviewText(18, true);
+        previewTimeView = createCenteredPreviewText(18, true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            previewStepsCountView.setAutoSizeTextTypeUniformWithConfiguration(
+            previewTimeView.setAutoSizeTextTypeUniformWithConfiguration(
                     10,
                     18,
                     1,
-                    TypedValue.COMPLEX_UNIT_SP
+                    android.util.TypedValue.COMPLEX_UNIT_SP
             );
         }
-        panel.addView(previewStepsCountView, matchWidthLayoutParams());
+        panel.addView(previewTimeView, matchWidthLayoutParams());
 
-        previewStepsProgressView = new ImageView(this);
-        previewStepsProgressView.setScaleType(ImageView.ScaleType.FIT_XY);
-        LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                dp(8)
-        );
-        progressParams.topMargin = dp(6);
-        panel.addView(previewStepsProgressView, progressParams);
+        previewWeekView = createCenteredPreviewText(12, true);
+        LinearLayout.LayoutParams weekParams = matchWidthLayoutParams();
+        weekParams.topMargin = dp(2);
+        panel.addView(previewWeekView, weekParams);
 
-        previewStepsGoalView = createCenteredPreviewText(10, false);
-        LinearLayout.LayoutParams goalParams = matchWidthLayoutParams();
-        goalParams.topMargin = dp(4);
-        panel.addView(previewStepsGoalView, goalParams);
+        previewDateView = createCenteredPreviewText(11, false);
+        LinearLayout.LayoutParams dateParams = matchWidthLayoutParams();
+        dateParams.topMargin = dp(2);
+        panel.addView(previewDateView, dateParams);
+
+        previewLunarView = createCenteredPreviewText(10, false);
+        panel.addView(previewLunarView, matchWidthLayoutParams());
         return panel;
     }
 
@@ -570,12 +498,11 @@ public class MainActivity extends Activity {
         previewPhoneBatteryPercentView.setText(systemBattery.percentText);
         previewPhoneChargeStatusView.setText(systemBattery.chargeText);
 
-        StepCounterHelper.StepStatus stepStatus = StepCounterHelper.getStepStatus(this);
-        previewStepsCountView.setText(stepStatus.stepsText);
-        previewStepsProgressView.setImageBitmap(
-                WidgetIconRenderer.createStepProgressBar(this, stepStatus.steps, stepStatus.goal)
-        );
-        previewStepsGoalView.setText(stepStatus.goalText);
+        DateTimeHelper.DateTimeStatus dateTime = DateTimeHelper.getCurrent();
+        previewTimeView.setText(dateTime.timeText);
+        previewWeekView.setText(dateTime.weekText);
+        previewDateView.setText(dateTime.dateText);
+        previewLunarView.setText(dateTime.lunarText);
     }
 
     private static String formatBatteryDisplay(String batteryText) {
@@ -604,12 +531,6 @@ public class MainActivity extends Activity {
     private LinearLayout.LayoutParams previewPagerLayoutParams() {
         LinearLayout.LayoutParams params = matchWidthLayoutParams();
         params.topMargin = dp(24);
-        return params;
-    }
-
-    private LinearLayout.LayoutParams stepGoalLayoutParams() {
-        LinearLayout.LayoutParams params = matchWidthLayoutParams();
-        params.topMargin = dp(12);
         return params;
     }
 
