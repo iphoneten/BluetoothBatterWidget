@@ -23,7 +23,7 @@ final class StepCounterHelper {
     private static final String KEY_STEPS = "steps";
     private static final String KEY_UPDATED_AT = "updated_at";
     private static final String KEY_SCHEMA_VERSION = "schema_version";
-    private static final int SCHEMA_VERSION = 2;
+    private static final int SCHEMA_VERSION = 3;
     private static final long SENSOR_TIMEOUT_MS = 10000L;
 
     private StepCounterHelper() {
@@ -58,7 +58,7 @@ final class StepCounterHelper {
         return new StepStatus(
                 steps,
                 dailyGoal,
-                String.format(Locale.CHINA, "%,d 步", steps),
+                String.format(Locale.CHINA, "%,d", steps),
                 formatGoalText(dailyGoal)
         );
     }
@@ -128,7 +128,7 @@ final class StepCounterHelper {
                 || !today.equals(savedDay)
                 || baseline < 0
                 || totalSinceBoot < baseline) {
-            baseline = 0;
+            baseline = totalSinceBoot;
         }
 
         int steps = Math.max(0, totalSinceBoot - baseline);

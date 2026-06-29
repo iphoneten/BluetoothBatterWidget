@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.view.View;
 import android.widget.RemoteViews;
 
 public class MyWidgetProvider2x2 extends AppWidgetProvider {
@@ -95,6 +96,12 @@ public class MyWidgetProvider2x2 extends AppWidgetProvider {
                 38,
                 3,
                 22
+        );
+        BatteryHelper.BluetoothBatteryStatus bluetoothStatus =
+                BatteryHelper.getBluetoothBatteryStatus(context);
+        views.setViewVisibility(
+                R.id.connection_status,
+                bluetoothStatus.connected ? View.GONE : View.VISIBLE
         );
 
         SystemBatteryHelper.BatteryStatus systemBattery =

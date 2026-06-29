@@ -42,6 +42,7 @@ final class WidgetRemoteViews {
         views.setViewVisibility(R.id.battery_text, View.GONE);
 
         views.setTextViewText(R.id.device_name, status.deviceName);
+        views.setViewVisibility(R.id.device_name, status.connected ? View.VISIBLE : View.GONE);
         views.setTextViewText(R.id.battery_percent, formatBatteryDisplay(status.batteryText));
         views.setTextViewText(R.id.connection_status, status.statusText);
         views.setOnClickPendingIntent(R.id.widget_root, clickIntent);

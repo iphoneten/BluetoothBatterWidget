@@ -10,10 +10,13 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -32,6 +35,15 @@ public class MainActivity extends Activity {
     private ImageView previewBatteryImageView;
     private TextView previewBatteryTextView;
     private TextView previewStatusView;
+    private TextView preview2x2DeviceNameView;
+    private ImageView preview2x2BatteryImageView;
+    private TextView preview2x2StatusView;
+    private ImageView previewPhoneBatteryImageView;
+    private TextView previewPhoneBatteryPercentView;
+    private TextView previewPhoneChargeStatusView;
+    private TextView previewStepsCountView;
+    private ImageView previewStepsProgressView;
+    private TextView previewStepsGoalView;
     private EditText stepGoalInputView;
 
     @Override
@@ -68,7 +80,7 @@ public class MainActivity extends Activity {
         infoParams.topMargin = dp(8);
         root.addView(widgetInfoView, infoParams);
 
-        root.addView(createPreviewCard(), previewCardLayoutParams());
+        root.addView(createWidgetPreviewPager(), previewPagerLayoutParams());
 
         Button addWidget2x1Button = new Button(this);
         addWidget2x1Button.setText("添加 2x1 小组件");
@@ -117,6 +129,7 @@ public class MainActivity extends Activity {
         if (missingPermissions.length > 0) {
             statusView.setText(getPermissionStatusText());
             updatePreview(BatteryHelper.getBluetoothBatteryStatus(this));
+            updateWidgetMetricsPreview();
             requestPermissions(missingPermissions, REQUEST_REQUIRED_PERMISSIONS);
             updateWidgetInfo();
             return;
@@ -173,6 +186,7 @@ public class MainActivity extends Activity {
 
         StepGoalHelper.saveGoal(this, goal);
         stepGoalInputView.setText(String.valueOf(StepGoalHelper.getGoal(this)));
+        updateWidgetMetricsPreview();
         MyWidgetProvider2x2.updateAllWidgets(this);
         Toast.makeText(this, "已保存目标步数", Toast.LENGTH_SHORT).show();
     }
@@ -259,10 +273,34 @@ public class MainActivity extends Activity {
         BatteryHelper.BluetoothBatteryStatus status = BatteryHelper.getBluetoothBatteryStatus(this);
         statusView.setText(status.statusText);
         updatePreview(status);
+        updateWidgetMetricsPreview();
+        StepCounterHelper.requestStepUpdate(this, this::updateWidgetMetricsPreview);
         MyWidgetProvider.updateAllWidgets(this);
         MyWidgetProvider2x2.updateAllWidgets(this);
         WidgetRefreshScheduler.scheduleIfNeeded(this);
         updateWidgetInfo();
+    }
+
+    private HorizontalScrollView createWidgetPreviewPager() {
+        HorizontalScrollView scrollView = new HorizontalScrollView(this);
+        scrollView.setHorizontalScrollBarEnabled(false);
+        scrollView.setFillViewport(false);
+
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        scrollView.addView(row, new HorizontalScrollView.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+
+        row.addView(createPreviewCard(), new LinearLayout.LayoutParams(dp(160), dp(40)));
+
+        LinearLayout.LayoutParams preview2x2Params = new LinearLayout.LayoutParams(dp(160), dp(160));
+        preview2x2Params.leftMargin = dp(16);
+        row.addView(createPreview2x2Card(), preview2x2Params);
+
+        return scrollView;
     }
 
     private LinearLayout createPreviewCard() {
@@ -341,15 +379,203 @@ public class MainActivity extends Activity {
         return card;
     }
 
+    private LinearLayout createPreview2x2Card() {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(8), dp(8), dp(8), dp(8));
+        root.setBackgroundResource(R.drawable.widget_2x2_background);
+
+        LinearLayout bluetoothRow = new LinearLayout(this);
+        bluetoothRow.setOrientation(LinearLayout.HORIZONTAL);
+        bluetoothRow.setGravity(Gravity.CENTER_VERTICAL);
+        bluetoothRow.setPadding(dp(8), 0, dp(8), 0);
+        bluetoothRow.setBackgroundResource(R.drawable.widget_background);
+        root.addView(bluetoothRow, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(48)
+        ));
+
+        preview2x2BatteryImageView = new ImageView(this);
+        bluetoothRow.addView(preview2x2BatteryImageView, new LinearLayout.LayoutParams(dp(38), dp(38)));
+
+        LinearLayout bluetoothTextColumn = new LinearLayout(this);
+        bluetoothTextColumn.setOrientation(LinearLayout.VERTICAL);
+        bluetoothTextColumn.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams bluetoothTextParams = new LinearLayout.LayoutParams(
+                0,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                1
+        );
+        bluetoothTextParams.leftMargin = dp(8);
+        bluetoothRow.addView(bluetoothTextColumn, bluetoothTextParams);
+
+        LinearLayout bluetoothTopLine = new LinearLayout(this);
+        bluetoothTopLine.setGravity(Gravity.CENTER_VERTICAL);
+        bluetoothTopLine.setOrientation(LinearLayout.HORIZONTAL);
+        bluetoothTextColumn.addView(bluetoothTopLine, matchWidthLayoutParams());
+
+        preview2x2DeviceNameView = new TextView(this);
+        preview2x2DeviceNameView.setSingleLine(true);
+        preview2x2DeviceNameView.setIncludeFontPadding(true);
+        preview2x2DeviceNameView.setTextColor(0xFF111111);
+        preview2x2DeviceNameView.setTextSize(12);
+        preview2x2DeviceNameView.setTypeface(null, android.graphics.Typeface.BOLD);
+        bluetoothTopLine.addView(preview2x2DeviceNameView, new LinearLayout.LayoutParams(
+                0,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                1
+        ));
+
+        preview2x2StatusView = new TextView(this);
+        preview2x2StatusView.setSingleLine(true);
+        preview2x2StatusView.setIncludeFontPadding(true);
+        preview2x2StatusView.setTextColor(0xFF111111);
+        preview2x2StatusView.setTextSize(13);
+        preview2x2StatusView.setTypeface(null, android.graphics.Typeface.BOLD);
+        bluetoothTopLine.addView(preview2x2StatusView, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+
+        LinearLayout panelsRow = new LinearLayout(this);
+        panelsRow.setGravity(Gravity.CENTER);
+        panelsRow.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams panelsParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1
+        );
+        panelsParams.topMargin = dp(8);
+        root.addView(panelsRow, panelsParams);
+
+        panelsRow.addView(createPhoneBatteryPreviewPanel(), new LinearLayout.LayoutParams(
+                0,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                1
+        ));
+
+        LinearLayout.LayoutParams stepsPanelParams = new LinearLayout.LayoutParams(
+                0,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                1
+        );
+        stepsPanelParams.leftMargin = dp(8);
+        panelsRow.addView(createStepsPreviewPanel(), stepsPanelParams);
+
+        return root;
+    }
+
+    private LinearLayout createPhoneBatteryPreviewPanel() {
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setGravity(Gravity.CENTER);
+        panel.setPadding(dp(8), dp(8), dp(8), dp(8));
+        panel.setBackgroundResource(R.drawable.widget_panel_blue);
+
+        previewPhoneBatteryImageView = new ImageView(this);
+        panel.addView(previewPhoneBatteryImageView, new LinearLayout.LayoutParams(dp(44), dp(44)));
+
+        previewPhoneBatteryPercentView = createCenteredPreviewText(16, true);
+        LinearLayout.LayoutParams percentParams = matchWidthLayoutParams();
+        percentParams.topMargin = dp(4);
+        panel.addView(previewPhoneBatteryPercentView, percentParams);
+
+        previewPhoneChargeStatusView = createCenteredPreviewText(11, true);
+        panel.addView(previewPhoneChargeStatusView, matchWidthLayoutParams());
+        return panel;
+    }
+
+    private LinearLayout createStepsPreviewPanel() {
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setGravity(Gravity.CENTER);
+        panel.setPadding(dp(8), dp(8), dp(8), dp(8));
+        panel.setBackgroundResource(R.drawable.widget_panel_green);
+
+        previewStepsCountView = createCenteredPreviewText(18, true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            previewStepsCountView.setAutoSizeTextTypeUniformWithConfiguration(
+                    10,
+                    18,
+                    1,
+                    TypedValue.COMPLEX_UNIT_SP
+            );
+        }
+        panel.addView(previewStepsCountView, matchWidthLayoutParams());
+
+        previewStepsProgressView = new ImageView(this);
+        previewStepsProgressView.setScaleType(ImageView.ScaleType.FIT_XY);
+        LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(8)
+        );
+        progressParams.topMargin = dp(6);
+        panel.addView(previewStepsProgressView, progressParams);
+
+        previewStepsGoalView = createCenteredPreviewText(10, false);
+        LinearLayout.LayoutParams goalParams = matchWidthLayoutParams();
+        goalParams.topMargin = dp(4);
+        panel.addView(previewStepsGoalView, goalParams);
+        return panel;
+    }
+
+    private TextView createCenteredPreviewText(int textSize, boolean bold) {
+        TextView textView = new TextView(this);
+        textView.setGravity(Gravity.CENTER);
+        textView.setSingleLine(true);
+        textView.setIncludeFontPadding(true);
+        textView.setTextColor(0xFF111111);
+        textView.setTextSize(textSize);
+        if (bold) {
+            textView.setTypeface(null, android.graphics.Typeface.BOLD);
+        }
+        return textView;
+    }
+
     private void updatePreview(BatteryHelper.BluetoothBatteryStatus status) {
         previewDeviceNameView.setText(status.deviceName);
+        previewDeviceNameView.setVisibility(status.connected ? View.VISIBLE : View.GONE);
         previewBatteryTextView.setText(formatBatteryDisplay(status.batteryText));
         previewStatusView.setText(status.statusText);
+        preview2x2DeviceNameView.setText(status.deviceName);
+        preview2x2DeviceNameView.setVisibility(status.connected ? View.VISIBLE : View.GONE);
+        preview2x2StatusView.setText(status.statusText);
+        preview2x2StatusView.setVisibility(status.connected ? View.GONE : View.VISIBLE);
 
         boolean showBatteryProgress = status.connected && status.batteryLevel >= 0;
-        previewBatteryImageView.setImageBitmap(
-                WidgetIconRenderer.createBatteryRingIcon(this, status.batteryLevel, showBatteryProgress)
+        previewBatteryImageView.setImageBitmap(WidgetIconRenderer.createBatteryRingIcon(
+                this,
+                status.batteryLevel,
+                showBatteryProgress,
+                34,
+                3,
+                20
+        ));
+        preview2x2BatteryImageView.setImageBitmap(WidgetIconRenderer.createBatteryRingIcon(
+                this,
+                status.batteryLevel,
+                showBatteryProgress,
+                38,
+                3,
+                22
+        ));
+    }
+
+    private void updateWidgetMetricsPreview() {
+        SystemBatteryHelper.BatteryStatus systemBattery =
+                SystemBatteryHelper.getBatteryStatus(this);
+        previewPhoneBatteryImageView.setImageBitmap(
+                WidgetIconRenderer.createSystemBatteryRingIcon(this, systemBattery.level)
         );
+        previewPhoneBatteryPercentView.setText(systemBattery.percentText);
+        previewPhoneChargeStatusView.setText(systemBattery.chargeText);
+
+        StepCounterHelper.StepStatus stepStatus = StepCounterHelper.getStepStatus(this);
+        previewStepsCountView.setText(stepStatus.stepsText);
+        previewStepsProgressView.setImageBitmap(
+                WidgetIconRenderer.createStepProgressBar(this, stepStatus.steps, stepStatus.goal)
+        );
+        previewStepsGoalView.setText(stepStatus.goalText);
     }
 
     private static String formatBatteryDisplay(String batteryText) {
@@ -375,8 +601,8 @@ public class MainActivity extends Activity {
         );
     }
 
-    private LinearLayout.LayoutParams previewCardLayoutParams() {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(160), dp(40));
+    private LinearLayout.LayoutParams previewPagerLayoutParams() {
+        LinearLayout.LayoutParams params = matchWidthLayoutParams();
         params.topMargin = dp(24);
         return params;
     }
