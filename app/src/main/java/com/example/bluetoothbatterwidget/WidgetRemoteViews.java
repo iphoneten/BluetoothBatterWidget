@@ -13,9 +13,6 @@ final class WidgetRemoteViews {
     static RemoteViews create(
             Context context,
             int layoutResId,
-            Class<?> providerClass,
-            String refreshAction,
-            int refreshRequestCode,
             int openAppRequestCode,
             int iconSizeDp,
             int iconStrokeDp,
@@ -23,9 +20,7 @@ final class WidgetRemoteViews {
     ) {
         RemoteViews views = new RemoteViews(context.getPackageName(), layoutResId);
         BatteryHelper.BluetoothBatteryStatus status = BatteryHelper.getBluetoothBatteryStatus(context);
-        PendingIntent clickIntent = status.permissionRequired
-                ? createOpenAppPendingIntent(context, openAppRequestCode)
-                : createRefreshPendingIntent(context, providerClass, refreshAction, refreshRequestCode);
+        PendingIntent clickIntent = createOpenAppPendingIntent(context, openAppRequestCode);
 
         boolean showBatteryProgress = status.connected && status.batteryLevel >= 0;
         views.setImageViewBitmap(
@@ -56,22 +51,6 @@ final class WidgetRemoteViews {
 
     private static String formatBatteryDisplay(String batteryText) {
         return "电量 " + batteryText;
-    }
-
-    private static PendingIntent createRefreshPendingIntent(
-            Context context,
-            Class<?> providerClass,
-            String refreshAction,
-            int requestCode
-    ) {
-        Intent intent = new Intent(context, providerClass);
-        intent.setAction(refreshAction);
-        return PendingIntent.getBroadcast(
-                context,
-                requestCode,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
     }
 
     private static PendingIntent createOpenAppPendingIntent(Context context, int requestCode) {

@@ -6,6 +6,19 @@ android {
     namespace 'com.example.bluetoothbatterwidget'
     compileSdk 34
 
+    def releaseStoreFilePath = project.findProperty("BBW_RELEASE_STORE_FILE")
+            ?: System.getenv("BBW_RELEASE_STORE_FILE")
+            ?: "/Users/andyfan/Desktop/pythonPro/cloudflareImages/ImageDriverMobile/android/keystore/360度网盘.jks"
+    def releaseStorePassword = project.findProperty("BBW_RELEASE_STORE_PASSWORD")
+            ?: System.getenv("BBW_RELEASE_STORE_PASSWORD")
+            ?: "qwasz123"
+    def releaseKeyAlias = project.findProperty("BBW_RELEASE_KEY_ALIAS")
+            ?: System.getenv("BBW_RELEASE_KEY_ALIAS")
+            ?: "key0"
+    def releaseKeyPassword = project.findProperty("BBW_RELEASE_KEY_PASSWORD")
+            ?: System.getenv("BBW_RELEASE_KEY_PASSWORD")
+            ?: "qwasz123"
+
     defaultConfig {
         applicationId "com.example.bluetoothbatterwidget"
         minSdk 29
@@ -16,8 +29,18 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        release {
+            storeFile file(releaseStoreFilePath)
+            storePassword releaseStorePassword
+            keyAlias releaseKeyAlias
+            keyPassword releaseKeyPassword
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }

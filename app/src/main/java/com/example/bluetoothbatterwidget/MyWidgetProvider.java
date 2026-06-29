@@ -70,9 +70,6 @@ public class MyWidgetProvider extends AppWidgetProvider {
         return WidgetRemoteViews.create(
                 context,
                 R.layout.widget_layout,
-                MyWidgetProvider.class,
-                ACTION_REFRESH_WIDGET,
-                1,
                 2,
                 34,
                 3,

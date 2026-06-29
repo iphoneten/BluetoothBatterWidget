@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BluetoothBatterWidget</string>
+    <string name="app_name">蓝电小组件</string>
     <string name="widget_2x1_name">耳机电量 2x1</string>
     <string name="widget_2x2_name">耳机电量 2x2</string>
 </resources>
