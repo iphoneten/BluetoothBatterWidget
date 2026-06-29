@@ -6,6 +6,7 @@ cd "$ROOT_DIR"
 
 APP_ID="com.example.bluetoothbatterwidget"
 MAIN_ACTIVITY="${APP_ID}/.MainActivity"
+BUILD_GRADLE_FILE="$ROOT_DIR/app/build.gradle"
 GRADLE_TASK="${GRADLE_TASK:-assembleRelease}"
 APK_PATH="${APK_PATH:-app/build/outputs/apk/release/app-release.apk}"
 INSTALL_APK=1
@@ -43,6 +44,8 @@ for arg in "$@"; do
       echo "  GRADLE_BIN                  Optional Gradle executable. Default: auto-detect installed Gradle, then ./gradlew"
       echo "  GRADLE_USER_HOME            Optional Gradle cache dir. Default: project .gradle-user-home"
       echo "  JAVA_HOME                   Optional JDK path. Default: auto-detect JDK 17 on macOS"
+      echo "  VERSION_CODE                Optional versionCode. Default: current versionCode + 1"
+      echo "  VERSION_NAME                Optional versionName. Default: <current major.minor>.<versionCode>"
       echo "  BBW_RELEASE_STORE_FILE      Release keystore path"
       echo "  BBW_RELEASE_STORE_PASSWORD  Release keystore password"
       echo "  BBW_RELEASE_KEY_ALIAS       Release key alias"
@@ -143,6 +146,49 @@ select_gradle_bin() {
   echo "$ROOT_DIR/gradlew"
 }
 
+update_release_version() {
+  local current_code
+  local current_name
+  local next_code
+  local next_name
+  local version_prefix
+
+  current_code="$(awk '/^[[:space:]]*versionCode[[:space:]]+[0-9]+/ {print $2; exit}' "$BUILD_GRADLE_FILE")"
+  current_name="$(awk -F'"' '/^[[:space:]]*versionName[[:space:]]+"/ {print $2; exit}' "$BUILD_GRADLE_FILE")"
+
+  if [[ -z "$current_code" ]]; then
+    echo "Cannot find versionCode in $BUILD_GRADLE_FILE" >&2
+    exit 1
+  fi
+
+  if [[ -n "${VERSION_CODE:-}" ]]; then
+    next_code="$VERSION_CODE"
+  else
+    next_code=$((current_code + 1))
+  fi
+
+  if ! [[ "$next_code" =~ ^[0-9]+$ ]]; then
+    echo "VERSION_CODE must be a positive integer: $next_code" >&2
+    exit 1
+  fi
+
+  if [[ -n "${VERSION_NAME:-}" ]]; then
+    next_name="$VERSION_NAME"
+  elif [[ "$current_name" =~ ^([0-9]+)\.([0-9]+)(\.[0-9]+)?$ ]]; then
+    version_prefix="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+    next_name="${version_prefix}.${next_code}"
+  else
+    next_name="$next_code"
+  fi
+
+  export NEXT_VERSION_CODE="$next_code"
+  export NEXT_VERSION_NAME="$next_name"
+  perl -0pi -e 's/versionCode\s+\d+/versionCode $ENV{NEXT_VERSION_CODE}/' "$BUILD_GRADLE_FILE"
+  perl -0pi -e 's/versionName\s+"[^"]+"/versionName "$ENV{NEXT_VERSION_NAME}"/' "$BUILD_GRADLE_FILE"
+
+  echo "==> Updated version: versionCode $current_code -> $next_code, versionName $current_name -> $next_name"
+}
+
 if [[ ! -f "$KEYSTORE_FILE" ]]; then
   echo "Release keystore not found: $KEYSTORE_FILE" >&2
   exit 1
@@ -170,6 +216,8 @@ export BBW_RELEASE_STORE_FILE="$KEYSTORE_FILE"
 export BBW_RELEASE_STORE_PASSWORD="$KEYSTORE_PASSWORD"
 export BBW_RELEASE_KEY_ALIAS="$KEY_ALIAS"
 export BBW_RELEASE_KEY_PASSWORD="$KEY_PASSWORD"
+
+update_release_version
 
 echo "==> Building signed release APK: $GRADLE_TASK"
 echo "==> Using Java: $JAVA_HOME"
