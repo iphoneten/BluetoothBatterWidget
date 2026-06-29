@@ -311,8 +311,8 @@ public class MainActivity extends Activity {
     private LinearLayout createPreview2x2Card() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(8), dp(8), dp(8), dp(8));
-        root.setBackgroundResource(R.drawable.widget_2x2_background);
+        root.setPadding(dp(8), dp(12), dp(8), dp(12));
+        root.setBackgroundResource(R.drawable.widget_2x2_background_inset);
 
         LinearLayout bluetoothRow = new LinearLayout(this);
         bluetoothRow.setOrientation(LinearLayout.HORIZONTAL);

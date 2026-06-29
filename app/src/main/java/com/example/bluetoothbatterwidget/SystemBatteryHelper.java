@@ -55,11 +55,12 @@ final class SystemBatteryHelper {
                 || status == BatteryManager.BATTERY_STATUS_FULL
                 || (batteryManager != null && batteryManager.isCharging());
 
+        boolean full = percent >= 100 || status == BatteryManager.BATTERY_STATUS_FULL;
         String chargeText;
-        if (!pluggedIn) {
+        if (full) {
+            chargeText = "满电";
+        } else if (!pluggedIn) {
             chargeText = "未充电";
-        } else if (status == BatteryManager.BATTERY_STATUS_FULL) {
-            chargeText = "已充满";
         } else {
             chargeText = "充电中";
         }

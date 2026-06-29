@@ -59,12 +59,12 @@ final class WidgetIconRenderer {
 
         paint.setColor(0xFFBFD5DA);
         canvas.drawArc(ringBounds, -90, 360, false, paint);
-        paint.setColor(0xFF3B8190);
+        paint.setColor(progressColor(progress));
         canvas.drawArc(ringBounds, -90, 360f * progress / 100f, false, paint);
 
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(dp(context, 2));
-        paint.setColor(0xFF3B8190);
+        paint.setColor(progressColor(progress));
         paint.setStrokeCap(Paint.Cap.SQUARE);
 
         float bodyWidth = dp(context, 12);
